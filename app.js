@@ -543,14 +543,17 @@ function matchIntent(text) {
 // ==========================================================================
 // AI CHATBOT CONFIGURATION & STATE
 // ==========================================================================
-const GEMINI_API_KEY = "AQ.Ab8RN6LpEGAPU9Zvf9aTEmLwV23k_eBdY2AuT5xAagl1h0CdwQ"; // Insert your Google Gemini API Key here to enable live AI responses
+// Secure API Configuration
+// To prevent public key exposure, the Gemini API key is loaded dynamically from localStorage.
+// You can set your key securely by typing '/apikey YOUR_KEY_HERE' in the chat, or clear it with '/apikey clear'.
+const GEMINI_API_KEY = localStorage.getItem('GEMINI_API_KEY') || "";
 const EMAIL_ENDPOINT = "https://formsubmit.co/ajax/shivananddhanagond286@gmail.com"; // Free form submission service that delivers directly to your email inbox
 
 const chatHistory = [];
 let chatState = 'idle'; // idle | collecting_name | collecting_contact | collecting_desc
 let leadData = { name: '', contact: '', desc: '' };
 
-function showStatusToast(message, isSuccess) {
+function showStatusToast(isSuccess) {
   let toast = document.getElementById('status-toast');
   if (!toast) {
     toast = document.createElement('div');
@@ -581,8 +584,8 @@ function showStatusToast(message, isSuccess) {
   
   toast.style.borderColor = isSuccess ? 'var(--accent)' : '#ff5555';
   toast.innerHTML = isSuccess 
-    ? `✨ <b>Success:</b> ${message}` 
-    : `❌ <b>Error:</b> ${message}`;
+    ? "Success: project details submitted successfully!" 
+    : "Submission failed";
   
   setTimeout(() => {
     toast.style.opacity = '1';
@@ -621,15 +624,15 @@ async function sendLeadEmail(name, contact, desc) {
     if (res.ok) {
       const data = await res.json();
       console.log("AJAX Success:", data);
-      showStatusToast("Project details submitted successfully!", true);
+      showStatusToast(true);
     } else {
       const text = await res.text();
       console.error("AJAX Server Error:", res.status, text);
-      showStatusToast(`Submission failed (Status ${res.status}): ${text || 'Unknown Error'}`, false);
+      showStatusToast(false);
     }
   } catch (err) {
     console.error("AJAX Fetch Network Error:", err);
-    showStatusToast(`Network Error: ${err.message || 'Please check your connection and running protocol'}`, false);
+    showStatusToast(false);
   }
 }
 
@@ -809,6 +812,20 @@ async function handleUserMessage() {
   addUserBubble(text);
   chatHistory.push({ role: 'user', text });
   await new Promise(r => setTimeout(r, 200));
+
+  // Hidden secure developer config commands
+  if (text.startsWith('/apikey ')) {
+    const key = text.substring(8).trim();
+    if (key.toLowerCase() === 'clear') {
+      localStorage.removeItem('GEMINI_API_KEY');
+      addBubble("API Key cleared successfully.");
+    } else {
+      localStorage.setItem('GEMINI_API_KEY', key);
+      addBubble("Gemini API Key saved securely in your browser's local storage!");
+    }
+    setChips(MENU);
+    return;
+  }
 
   // 1. If currently inside lead collection, process locally (prevents keywords like "portfolio" from aborting the flow)
   if (chatState !== 'idle') {
@@ -1153,50 +1170,58 @@ function initChatParticles() {
     height = canvas.height = canvas.offsetHeight || 780;
   });
 
-  const particleCount = 200;
+  const particleCount = 85;
   const list = [];
+  const connectionDistance = 62; // Threshold distance for drawing connections
 
   for (let i = 0; i < particleCount; i++) {
     list.push({
       x: Math.random() * width,
       y: Math.random() * height,
-      vx: (Math.random() - 0.5) * 0.2,
-      vy: -0.15 - Math.random() * 0.3,
-      size: 0.6 + Math.random() * 1.4,
-      alpha: 0.05 + Math.random() * 0.35,
-      alphaSpeed: 0.002 + Math.random() * 0.005,
-      decayDir: Math.random() > 0.5 ? 1 : -1
+      vx: (Math.random() - 0.5) * 0.28,
+      vy: (Math.random() - 0.5) * 0.28,
+      size: 1.0 + Math.random() * 1.5,
+      alpha: 0.15 + Math.random() * 0.35
     });
   }
 
   function animate() {
     ctx.clearRect(0, 0, width, height);
 
+    // Update and draw particles
     for (let i = 0; i < particleCount; i++) {
       const p = list[i];
       p.x += p.vx;
       p.y += p.vy;
 
+      // Screen wrapping
       if (p.x < 0) p.x = width;
       if (p.x > width) p.x = 0;
-      if (p.y < 0) {
-        p.y = height;
-        p.x = Math.random() * width;
-      }
-
-      p.alpha += p.alphaSpeed * p.decayDir;
-      if (p.alpha > 0.45) {
-        p.alpha = 0.45;
-        p.decayDir = -1;
-      } else if (p.alpha < 0.02) {
-        p.alpha = 0.02;
-        p.decayDir = 1;
-      }
+      if (p.y < 0) p.y = height;
+      if (p.y > height) p.y = 0;
 
       ctx.fillStyle = `rgba(217, 164, 65, ${p.alpha})`;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, 2 * Math.PI);
       ctx.fill();
+
+      // Constellation node connection checks
+      for (let j = i + 1; j < particleCount; j++) {
+        const p2 = list[j];
+        const dx = p.x - p2.x;
+        const dy = p.y - p2.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < connectionDistance) {
+          const lineAlpha = (1 - (dist / connectionDistance)) * 0.22; // Enhanced visibility connection lines
+          ctx.strokeStyle = `rgba(217, 164, 65, ${lineAlpha})`;
+          ctx.lineWidth = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+        }
+      }
     }
 
     requestAnimationFrame(animate);
