@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kanaka — Adaptive Conversational Portfolio</title>
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Explore Kanaka's portfolio through an interactive, adaptive conversation. View projects, read build logs, and connect instantly.">
+  <meta name="keywords" content="Kanaka, Portfolio, Web Developer, Chat Portfolio, Bangalore, BCA">
+  <meta name="author" content="Kanaka">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Background Prototype Label -->
+  <div class="caption" id="prototype-label">
+    Prototype: <span>interrogation gate ➔ adaptive chat</span>. Pick why you're here to unlock custom paths.
+  </div>
+
+  <!-- Main Mobile Frame Container -->
+  <main class="phone" id="app-frame">
+    
+    <!-- INTERROGATION SCREEN (Gate) -->
+    <section class="gate" id="gate-screen">
+      <!-- 3D Interactive Canvas Background -->
+      <canvas id="canvas3d" class="canvas-3d"></canvas>
+      
+      <!-- Glassmorphic Content Card -->
+      <div class="gate-card">
+        <div class="beam-glow"></div>
+        <h1 class="gate-title">Why are you here?</h1>
+        <p class="gate-subtitle">Be honest — it adapts what you see first.</p>
+        
+        <div class="options-container">
+          <button class="opt-btn" id="btn-hiring" data-intent="hiring">
+            <span class="btn-text">I'm hiring / recruiting</span>
+            <span class="btn-arrow">➔</span>
+          </button>
+          <button class="opt-btn" id="btn-curious" data-intent="curious">
+            <span class="btn-text">Just curious about the work</span>
+            <span class="btn-arrow">➔</span>
+          </button>
+          <button class="opt-btn" id="btn-stalking" data-intent="stalking">
+            <span class="btn-text">Honestly, kind of stalking</span>
+            <span class="btn-arrow">➔</span>
+          </button>
+        </div>
+        
+        <footer class="gate-footer">
+          Tap an option or type your own question once inside. Nothing is saved — no tracking, no cookies.
+        </footer>
+      </div>
+    </section>
+
+    <!-- STATUS BAR -->
+    <div class="statusbar" id="status-bar">
+      <span class="time-label">9:41</span>
+      <div class="status-icons">
+        <div class="signal-bars" aria-label="Full signal">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="battery-icon" aria-label="78% battery">
+          <span class="battery-level"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT HEADER -->
+    <header class="chat-header" id="chat-header">
+      <div class="avatar" id="avatar-container">
+        <img src="profile.jpg" alt="Kanaka" id="avatar-image">
+      </div>
+      <div class="header-text">
+        <h2 class="profile-name">Kanaka</h2>
+        <span class="profile-status">building something, probably</span>
+      </div>
+      <button class="exit-btn" id="btn-exit" aria-label="Exit conversation">
+        <span>✕</span> exit
+      </button>
+    </header>
+
+    <!-- CHAT CONVERSATION AREA -->
+    <section class="thread" id="chat-thread" aria-live="polite"></section>
+    
+    <!-- QUICK REPLY CHIPS -->
+    <nav class="chips" id="quick-chips" aria-label="Quick reply options"></nav>
+
+    <!-- INPUT INPUT BAR -->
+    <footer class="input-bar" id="input-footer">
+      <input class="input-field" id="userInput" type="text" placeholder="Ask me anything..." autocomplete="off" aria-label="Type message">
+      <button class="send-btn" id="btn-send" aria-label="Send message">➤</button>
+    </footer>
+    
+  </main>
+
+  <!-- JavaScript Application -->
+  <script src="app.js"></script>
+</body>
+</html>
