@@ -24,14 +24,14 @@
   <div class="ambient-bg" id="ambient-bg"></div>
   <div class="bg-overlay"></div>
 
-  <!-- Background Prototype Label -->
-  <div class="caption" id="prototype-label">
-    Prototype: <span>interrogation gate ➔ adaptive chat</span>. Pick why you're here to unlock custom paths.
-  </div>
 
 
-  <!-- Main Mobile Frame Container -->
+
   <main class="phone" id="app-frame">
+    <!-- Chat Screen Glassmorphic Background -->
+    <div class="phone-bg" id="phone-bg"></div>
+    <!-- Chat Screen Scattering Particles Canvas -->
+    <canvas id="phone-particles" class="phone-particles-canvas"></canvas>
     
     <!-- INTERROGATION SCREEN (Gate) -->
     <section class="gate" id="gate-screen">
@@ -111,22 +111,13 @@
     <div class="modal-overlay" id="modal-overlay"></div>
     <div class="modal-content">
       <button class="modal-close" id="modal-close" aria-label="Close popup">✕</button>
-      <h3 class="modal-title">Choose Profile Picture</h3>
+      <h3 class="modal-title">Swipe to Select Profile</h3>
       
-      <!-- Premium Preview Container -->
-      <div class="preview-container">
-        <img id="modal-preview-image" src="" alt="Profile Preview">
-      </div>
+      <!-- Full size image swipe container -->
+      <div class="profile-swipe-container" id="profile-swipe-container"></div>
       
-      <!-- Horizontally Scrollable Carousel Wrapper -->
-      <div class="profile-carousel-wrapper">
-        <button class="carousel-nav prev" id="carousel-prev" aria-label="Previous image">‹</button>
-        <div class="profile-carousel" id="profile-carousel"></div>
-        <button class="carousel-nav next" id="carousel-next" aria-label="Next image">›</button>
-      </div>
-
-      <!-- Apply Selection Button -->
-      <button class="select-profile-btn" id="btn-select-profile">Apply Profile Picture</button>
+      <!-- Navigation Indicators -->
+      <div class="swipe-dots" id="swipe-dots"></div>
     </div>
   </div>
 
