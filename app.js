@@ -20,15 +20,11 @@ let height = canvas.height = canvas.offsetHeight || 160;
 
 const particles = [];
 const numParticles = 240;
-const sphereRadius = 60;
-
-let autoRotation = 0;
-let mouseX = 0;
-let mouseY = 0;
-let targetX = 0;
-let targetY = 0;
-let currentTiltX = 0;
-let currentTiltY = 0;
+const baseRadius = 60;
+let currentRadius = 60;
+let currentExpansion = 1.0;
+let holdStartTime = 0;
+let isHolding = false;
 
 // Handle window resizing
 window.addEventListener('resize', () => {
@@ -38,18 +34,19 @@ window.addEventListener('resize', () => {
 });
 
 // Generate coordinates distributed evenly on a sphere using Fibonacci Spiral
-// ponytail: using standard math algorithms for 3D layout, avoiding massive 3D packages
 for (let i = 0; i < numParticles; i++) {
   const phi = Math.acos(-1 + (2 * i) / numParticles);
   const theta = Math.sqrt(numParticles * Math.PI) * phi;
   
   particles.push({
-    origX: sphereRadius * Math.cos(theta) * Math.sin(phi),
-    origY: sphereRadius * Math.sin(theta) * Math.sin(phi),
-    origZ: sphereRadius * Math.cos(phi),
+    origX: baseRadius * Math.cos(theta) * Math.sin(phi),
+    origY: baseRadius * Math.sin(theta) * Math.sin(phi),
+    origZ: baseRadius * Math.cos(phi),
     x: 0,
     y: 0,
-    z: 0
+    z: 0,
+    projX: 0,
+    projY: 0
   });
 }
 
@@ -72,6 +69,8 @@ function getEventXY(e) {
 
 function handleStart(e) {
   isDragging = true;
+  isHolding = true;
+  holdStartTime = Date.now();
   const pos = getEventXY(e);
   startX = pos.x;
   startY = pos.y;
@@ -110,6 +109,7 @@ function handleMove(e) {
 
 function handleEnd() {
   isDragging = false;
+  isHolding = false;
 }
 
 // Attach event listeners
@@ -144,6 +144,14 @@ function draw3D() {
     }
   }
 
+  // Smooth transitions for scale/radius and expansion
+  const targetRadius = isHolding ? 95 : 60;
+  currentRadius += (targetRadius - currentRadius) * 0.1;
+
+  const isFlyApart = isDragging && (Date.now() - holdStartTime > 5000);
+  const targetExpansion = isFlyApart ? 2.3 : 1.0;
+  currentExpansion += (targetExpansion - currentExpansion) * 0.06;
+
   const cosX = Math.cos(rotX);
   const sinX = Math.sin(rotX);
   const cosY = Math.cos(rotY);
@@ -151,14 +159,19 @@ function draw3D() {
 
   const focalLength = 200;
 
-  // Process and rotate points
+  // Process, scale, expand, and rotate points
   particles.forEach(p => {
-    // 1. Rotate around X axis (pitch)
-    let y1 = p.origY * cosX - p.origZ * sinX;
-    let z1 = p.origZ * cosX + p.origY * sinX;
-    let x1 = p.origX;
+    // Apply expansion to coordinates
+    const expX = p.origX * currentExpansion;
+    const expY = p.origY * currentExpansion;
+    const expZ = p.origZ * currentExpansion;
 
-    // 2. Rotate around Y axis (yaw)
+    // Rotate around X axis (pitch)
+    let y1 = expY * cosX - expZ * sinX;
+    let z1 = expZ * cosX + expY * sinX;
+    let x1 = expX;
+
+    // Rotate around Y axis (yaw)
     p.x = x1 * cosY - z1 * sinY;
     p.y = y1;
     p.z = z1 * cosY + x1 * sinY;
@@ -167,30 +180,57 @@ function draw3D() {
   // Sort particles by depth (Z) so that we draw back-to-front (Painters Algorithm)
   particles.sort((a, b) => b.z - a.z);
 
+  // Render nodes
   particles.forEach(p => {
     // Perspective projection
     const scale = focalLength / (focalLength + p.z);
-    const projX = p.x * scale + width / 2;
-    const projY = p.y * scale + height / 2;
+    
+    // Scale by current sphere radius
+    p.projX = (p.x * (currentRadius / 60)) * scale + width / 2;
+    p.projY = (p.y * (currentRadius / 60)) * scale + height / 2;
 
     // Draw glowing point
-    const normalizedZ = (p.z + sphereRadius) / (2 * sphereRadius); // 0 to 1
+    const normalizedZ = (p.z + (baseRadius * currentExpansion)) / (2 * baseRadius * currentExpansion); // 0 to 1
     const size = 0.8 + normalizedZ * 1.8;
-    const opacity = 0.2 + normalizedZ * 0.65;
+    const opacity = 0.25 + normalizedZ * 0.65;
 
     ctx.fillStyle = `rgba(217, 164, 65, ${opacity})`;
     ctx.beginPath();
-    ctx.arc(projX, projY, size, 0, 2 * Math.PI);
+    ctx.arc(p.projX, p.projY, size, 0, 2 * Math.PI);
     ctx.fill();
     
     // Subtle glow backing for closer points
     if (normalizedZ > 0.75) {
-      ctx.fillStyle = `rgba(217, 164, 65, 0.05)`;
+      ctx.fillStyle = `rgba(217, 164, 65, 0.06)`;
       ctx.beginPath();
-      ctx.arc(projX, projY, size * 2.2, 0, 2 * Math.PI);
+      ctx.arc(p.projX, p.projY, size * 2.2, 0, 2 * Math.PI);
       ctx.fill();
     }
   });
+
+  // Draw connections between close particles if expanded (neural globe web)
+  if (currentExpansion > 1.05) {
+    for (let i = 0; i < numParticles; i++) {
+      const p = particles[i];
+      // Connect to next 3 particles in sorted order (spatially close)
+      for (let j = i + 1; j < Math.min(numParticles, i + 4); j++) {
+        const p2 = particles[j];
+        const dx = p.projX - p2.projX;
+        const dy = p.projY - p2.projY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < 42) {
+          const lineAlpha = (1 - (dist / 42)) * 0.16 * ((currentExpansion - 1) / 1.3);
+          ctx.strokeStyle = `rgba(217, 164, 65, ${lineAlpha})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(p.projX, p.projY);
+          ctx.lineTo(p2.projX, p2.projY);
+          ctx.stroke();
+        }
+      }
+    }
+  }
 
   requestAnimationFrame(draw3D);
 }
