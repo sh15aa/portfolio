@@ -871,33 +871,37 @@ body {
 }
 
 .chip {
-  background: var(--chip-bg);
-  border: 1px solid var(--chip-border);
-  color: var(--text-primary);
+  background: rgba(217, 164, 65, 0.04);
+  border: 1px solid rgba(217, 164, 65, 0.22);
+  color: var(--accent);
   font-family: var(--font-sans);
   font-size: 12px;
-  font-weight: 500;
-  padding: 8px 14px;
+  font-weight: 600;
+  padding: 8px 16px;
   border-radius: 20px;
   cursor: pointer;
   user-select: none;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .chip:hover {
-  background: rgba(217, 164, 65, 0.06);
+  background: var(--accent-soft);
   border-color: var(--accent);
-  box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.1);
+  color: var(--text-primary);
+  box-shadow: 0 0 10px var(--accent-glow);
+  transform: translateY(-1.5px);
 }
 
 .chip.primary {
+  background: var(--accent-soft);
   border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(217, 164, 65, 0.03);
+  color: var(--text-primary);
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .chip.primary:hover {
-  background: var(--accent-soft);
+  background: var(--accent);
+  color: #07090e;
 }
 
 /* Input Bar */
