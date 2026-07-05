@@ -349,6 +349,14 @@ function removeTyping() {
 }
 
 // Add standard bot message bubble
+function getCurrentTimeStr() {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
+// Add standard bot message bubble
 function addBubble(text, isLast) {
   const row = document.createElement('div');
   row.className = 'bubble-row';
@@ -360,7 +368,7 @@ function addBubble(text, isLast) {
   
   const ts = document.createElement('div');
   ts.className = 'timestamp';
-  ts.innerHTML = '9:41' + (isLast ? ' <span class="tick">✓✓ seen</span>' : '');
+  ts.innerHTML = getCurrentTimeStr() + (isLast ? ' <span class="tick">✓✓ seen</span>' : '');
   row.appendChild(ts);
   
   thread.appendChild(row);
@@ -419,7 +427,7 @@ function addUserBubble(text) {
   
   const ts = document.createElement('div');
   ts.className = 'timestamp';
-  ts.textContent = '9:41';
+  ts.textContent = getCurrentTimeStr();
   row.appendChild(ts);
   
   thread.appendChild(row);
@@ -795,3 +803,18 @@ function updateBatteryStatus() {
 }
 
 updateBatteryStatus();
+
+// ==========================================================================
+// 7. DYNAMIC CLOCK UPDATER
+// ==========================================================================
+function updateClock() {
+  const timeLabel = document.getElementById('time-label');
+  if (!timeLabel) return;
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  timeLabel.textContent = `${hours}:${minutes}`;
+}
+
+updateClock();
+setInterval(updateClock, 10000);
