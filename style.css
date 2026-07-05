@@ -359,6 +359,11 @@ body {
   pointer-events: auto;
   opacity: 0.9;
   margin-bottom: 8px;
+  cursor: grab;
+}
+
+.canvas-3d:active {
+  cursor: grabbing;
 }
 
 /* Glassmorphic Gate Card */
@@ -524,6 +529,14 @@ body {
 .signal-bars span:nth-child(2) { height: 6px; }
 .signal-bars span:nth-child(3) { height: 8px; }
 .signal-bars span:nth-child(4) { height: 10px; }
+
+.battery-percentage {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-primary);
+  opacity: 0.85;
+  margin-right: 1px;
+}
 
 .battery-icon {
   width: 20px;

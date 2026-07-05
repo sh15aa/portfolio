@@ -53,22 +53,73 @@ for (let i = 0; i < numParticles; i++) {
   });
 }
 
-// Track mouse position on the canvas to tilt the sphere
-canvas.addEventListener('mousemove', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  mouseX = e.clientX - rect.left;
-  mouseY = e.clientY - rect.top;
-  
-  // Calculate relative displacement from center (-1 to 1)
-  targetX = (mouseX - width / 2) / (width / 2);
-  targetY = (mouseY - height / 2) / (height / 2);
-});
+// Interaction variables for drag-to-rotate interaction
+let isDragging = false;
+let startX = 0;
+let startY = 0;
+let rotX = 0;
+let rotY = 0;
+let velX = 0;
+let velY = 0;
 
-// Return to center when mouse leaves
-canvas.addEventListener('mouseleave', () => {
-  targetX = 0;
-  targetY = 0;
-});
+// Interaction helpers
+function getEventXY(e) {
+  if (e.touches && e.touches.length > 0) {
+    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }
+  return { x: e.clientX, y: e.clientY };
+}
+
+function handleStart(e) {
+  isDragging = true;
+  const pos = getEventXY(e);
+  startX = pos.x;
+  startY = pos.y;
+  velX = 0;
+  velY = 0;
+}
+
+function handleMove(e) {
+  if (!isDragging) return;
+  
+  // Prevent page scroll when interacting on touch screens
+  if (e.cancelable) {
+    e.preventDefault();
+  }
+  
+  const pos = getEventXY(e);
+  const dx = pos.x - startX;
+  const dy = pos.y - startY;
+
+  // Horizontal drag rotates around Y axis (left/right)
+  // Vertical drag rotates around X axis (up/down)
+  const sensitivity = 0.007;
+  velY = dx * sensitivity;
+  velX = -dy * sensitivity;
+
+  rotY += velY;
+  rotX += velX;
+
+  // Clamp vertical rotation so it doesn't spin fully upside down
+  const maxTilt = Math.PI / 2.2;
+  rotX = Math.max(-maxTilt, Math.min(maxTilt, rotX));
+
+  startX = pos.x;
+  startY = pos.y;
+}
+
+function handleEnd() {
+  isDragging = false;
+}
+
+// Attach event listeners
+canvas.addEventListener('mousedown', handleStart);
+window.addEventListener('mousemove', handleMove);
+window.addEventListener('mouseup', handleEnd);
+
+canvas.addEventListener('touchstart', handleStart, { passive: false });
+window.addEventListener('touchmove', handleMove, { passive: false });
+window.addEventListener('touchend', handleEnd);
 
 // Render Loop
 function draw3D() {
@@ -80,38 +131,37 @@ function draw3D() {
 
   ctx.clearRect(0, 0, width, height);
 
-  // Increment auto rotation
-  autoRotation += 0.008;
+  if (!isDragging) {
+    // Apply inertia decay
+    rotY += velY;
+    rotX += velX;
+    velY *= 0.95;
+    velX *= 0.95;
 
-  // Smoothly interpolate (lerp) tilt values
-  currentTiltX += (targetY * 0.45 - currentTiltX) * 0.08;
-  currentTiltY += (targetX * 0.45 - currentTiltY) * 0.08;
+    // Standard auto-rotation when user is not actively turning the sphere
+    if (Math.abs(velY) < 0.001) {
+      rotY += 0.005;
+    }
+  }
 
-  const cosAuto = Math.cos(autoRotation);
-  const sinAuto = Math.sin(autoRotation);
-  const cosTiltX = Math.cos(currentTiltX);
-  const sinTiltX = Math.sin(currentTiltX);
-  const cosTiltY = Math.cos(currentTiltY);
-  const sinTiltY = Math.sin(currentTiltY);
+  const cosX = Math.cos(rotX);
+  const sinX = Math.sin(rotX);
+  const cosY = Math.cos(rotY);
+  const sinY = Math.sin(rotY);
 
   const focalLength = 200;
 
   // Process and rotate points
   particles.forEach(p => {
-    // 1. Auto rotation around Y axis
-    let rx = p.origX * cosAuto - p.origZ * sinAuto;
-    let ry = p.origY;
-    let rz = p.origZ * cosAuto + p.origX * sinAuto;
+    // 1. Rotate around X axis (pitch)
+    let y1 = p.origY * cosX - p.origZ * sinX;
+    let z1 = p.origZ * cosX + p.origY * sinX;
+    let x1 = p.origX;
 
-    // 2. Apply tilt around X axis (driven by mouseY)
-    let rx2 = rx;
-    let ry2 = ry * cosTiltX - rz * sinTiltX;
-    let rz2 = rz * cosTiltX + ry * sinTiltX;
-
-    // 3. Apply tilt around Y axis (driven by mouseX)
-    p.x = rx2 * cosTiltY - rz2 * sinTiltY;
-    p.y = ry2;
-    p.z = rz2 * cosTiltY + rx2 * sinTiltY;
+    // 2. Rotate around Y axis (yaw)
+    p.x = x1 * cosY - z1 * sinY;
+    p.y = y1;
+    p.z = z1 * cosY + x1 * sinY;
   });
 
   // Sort particles by depth (Z) so that we draw back-to-front (Painters Algorithm)
@@ -124,7 +174,6 @@ function draw3D() {
     const projY = p.y * scale + height / 2;
 
     // Draw glowing point
-    // Map Z-depth to opacity and size (closer = brighter/larger)
     const normalizedZ = (p.z + sphereRadius) / (2 * sphereRadius); // 0 to 1
     const size = 0.8 + normalizedZ * 1.8;
     const opacity = 0.2 + normalizedZ * 0.65;
@@ -715,3 +764,34 @@ setInterval(() => {
   updateHourlyBackground();
   updateHourlyProfile();
 }, 60000);
+
+// ==========================================================================
+// 6. NATIVE BATTERY STATUS UPDATER
+// ==========================================================================
+function updateBatteryStatus() {
+  const pctText = document.getElementById('battery-percentage-text');
+  const levelBar = document.getElementById('battery-level-bar');
+  const iconContainer = document.getElementById('battery-icon-container');
+
+  function setBattery(level) {
+    const percentage = Math.round(level * 100);
+    if (pctText) pctText.textContent = percentage + '%';
+    if (levelBar) levelBar.style.width = percentage + '%';
+    if (iconContainer) iconContainer.setAttribute('aria-label', percentage + '% battery');
+  }
+
+  if (navigator.getBattery) {
+    navigator.getBattery().then(function(battery) {
+      setBattery(battery.level);
+      battery.addEventListener('levelchange', function() {
+        setBattery(battery.level);
+      });
+    }).catch(function() {
+      setBattery(0.78);
+    });
+  } else {
+    setBattery(0.78);
+  }
+}
+
+updateBatteryStatus();
