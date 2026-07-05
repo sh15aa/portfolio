@@ -771,22 +771,94 @@ function runLocalRuleBot(text) {
   setChips(MENU);
 }
 
+function isValidName(name) {
+  const clean = name.trim();
+  if (clean.length < 2 || clean.length > 50) return false;
+  
+  // Name should contain letters and spaces/hyphens only
+  if (!/^[a-zA-Z\s\-]+$/.test(clean)) return false;
+  
+  // Must contain at least one vowel (all real names have vowels)
+  if (!/[aeiouyAEIOUY]/.test(clean)) return false;
+  
+  // Avoid consecutive repeated characters like "aaaa"
+  if (/([a-zA-Z])\1{3,}/.test(clean)) return false;
+  
+  // Detect common keyboard mashes
+  const lower = clean.toLowerCase();
+  const mashes = ["asdf", "sdfg", "dfgh", "fghj", "ghjk", "hjkl", "qwer", "wert", "erty", "rtyu", "tyui", "yuio", "uiop", "zxcv", "xcvb", "cvbn", "vbnm"];
+  if (mashes.some(m => lower.includes(m))) return false;
+  
+  return true;
+}
+
+function isValidContact(contact) {
+  const clean = contact.trim();
+  
+  // Check for email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (emailRegex.test(clean)) return true;
+  
+  // Check for 10-digit phone number (ignoring common symbols like +, -, (, ), spaces)
+  const digits = clean.replace(/[\s\-\+\(\)]/g, '');
+  if (/^\d{10}$/.test(digits)) return true;
+  
+  return false;
+}
+
+function isValidDescription(desc) {
+  const clean = desc.trim();
+  if (clean.length < 8) return false;
+  
+  // Must contain vowels
+  if (!/[aeiouyAEIOUY]/.test(clean)) return false;
+  
+  // Detect repetitive characters or keyboard mashes
+  if (/([a-zA-Z0-9])\1{4,}/.test(clean)) return false;
+  
+  const lower = clean.toLowerCase();
+  const mashes = ["asdf", "sdfg", "dfgh", "fghj", "ghjk", "hjkl", "qwer", "wert", "erty", "rtyu", "tyui", "yuio", "uiop", "zxcv", "xcvb", "cvbn", "vbnm", "aslfja", "lkjsd", "qweqwe"];
+  if (mashes.some(m => lower.includes(m))) return false;
+  
+  return true;
+}
+
 function handleLocalLeadCollection(text) {
   removeTyping();
   
   if (chatState === 'collecting_name') {
+    if (!isValidName(text)) {
+      const reply = "Please enter a correct name (letters only, no keyboard mash).";
+      addBubble(reply);
+      chatHistory.push({ role: 'model', text: reply });
+      return;
+    }
     leadData.name = text;
     chatState = 'collecting_contact';
     const reply = `Thanks ${text}! I have noted your name. What is your email or phone number so Kanaka can reach you?`;
     addBubble(reply);
     chatHistory.push({ role: 'model', text: reply });
+    
   } else if (chatState === 'collecting_contact') {
+    if (!isValidContact(text)) {
+      const reply = "Please enter a valid email address or a 10-digit phone number.";
+      addBubble(reply);
+      chatHistory.push({ role: 'model', text: reply });
+      return;
+    }
     leadData.contact = text;
     chatState = 'collecting_desc';
     const reply = "I have noted your contact details. What is your project about? Please share a short description.";
     addBubble(reply);
     chatHistory.push({ role: 'model', text: reply });
+    
   } else if (chatState === 'collecting_desc') {
+    if (!isValidDescription(text)) {
+      const reply = "Please politely enter a proper description of what you want to build so Kanaka can help you.";
+      addBubble(reply);
+      chatHistory.push({ role: 'model', text: reply });
+      return;
+    }
     leadData.desc = text;
     chatState = 'idle';
     const reply = "Thank you! I have sent the details to Kanaka and he will connect with you soon.";
