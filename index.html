@@ -20,21 +20,25 @@
 </head>
 <body>
 
+  <!-- Ambient Background Images Layer -->
+  <div class="ambient-bg" id="ambient-bg"></div>
+  <div class="bg-overlay"></div>
+
   <!-- Background Prototype Label -->
   <div class="caption" id="prototype-label">
     Prototype: <span>interrogation gate ➔ adaptive chat</span>. Pick why you're here to unlock custom paths.
   </div>
+
 
   <!-- Main Mobile Frame Container -->
   <main class="phone" id="app-frame">
     
     <!-- INTERROGATION SCREEN (Gate) -->
     <section class="gate" id="gate-screen">
-      <!-- 3D Interactive Canvas Background -->
-      <canvas id="canvas3d" class="canvas-3d"></canvas>
-      
       <!-- Glassmorphic Content Card -->
       <div class="gate-card">
+        <!-- 3D Interactive Canvas Hero Asset -->
+        <canvas id="canvas3d" class="canvas-3d"></canvas>
         <div class="beam-glow"></div>
         <h1 class="gate-title">Why are you here?</h1>
         <p class="gate-subtitle">Be honest — it adapts what you see first.</p>
@@ -100,6 +104,30 @@
     </footer>
     
   </main>
+
+  <!-- Profile Picture Modal Popup -->
+  <div class="modal" id="profile-modal" aria-hidden="true">
+    <div class="modal-overlay" id="modal-overlay"></div>
+    <div class="modal-content">
+      <button class="modal-close" id="modal-close" aria-label="Close popup">✕</button>
+      <h3 class="modal-title">Choose Profile Picture</h3>
+      
+      <!-- Premium Preview Container -->
+      <div class="preview-container">
+        <img id="modal-preview-image" src="" alt="Profile Preview">
+      </div>
+      
+      <!-- Horizontally Scrollable Carousel Wrapper -->
+      <div class="profile-carousel-wrapper">
+        <button class="carousel-nav prev" id="carousel-prev" aria-label="Previous image">‹</button>
+        <div class="profile-carousel" id="profile-carousel"></div>
+        <button class="carousel-nav next" id="carousel-next" aria-label="Next image">›</button>
+      </div>
+
+      <!-- Apply Selection Button -->
+      <button class="select-profile-btn" id="btn-select-profile">Apply Profile Picture</button>
+    </div>
+  </div>
 
   <!-- JavaScript Application -->
   <script src="app.js"></script>

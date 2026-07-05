@@ -51,7 +51,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--bg-gradient);
+  background: #030407;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -60,8 +60,236 @@ body {
   font-family: var(--font-sans);
   color: var(--text-primary);
   overflow-x: hidden;
+  position: relative;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Ambient Background Styling */
+.ambient-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.32;
+  transition: background-image 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+  pointer-events: none;
+  filter: blur(1px);
+}
+
+/* Vignette/Glow overlay to focus attention on the phone container */
+.bg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(circle at 50% 30%, transparent 10%, #030407 85%);
+  pointer-events: none;
+}
+
+/* Profile Picture Popup Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.modal.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 7, 10, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.modal-content {
+  position: relative;
+  z-index: 101;
+  max-width: 90%;
+  width: 360px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 28px;
+  padding: 30px 24px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+  max-height: 80%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: scale(0.9);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal.show .modal-content {
+  transform: scale(1);
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 18px;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.preview-container {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+  overflow: hidden;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-dark);
+}
+
+.preview-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.profile-carousel-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.profile-carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  gap: 10px;
+  width: 100%;
+  padding: 4px 0;
+  scrollbar-width: none;
+}
+
+.profile-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.carousel-thumb {
+  flex: 0 0 64px;
+  width: 64px;
+  height: 64px;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  scroll-snap-align: center;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.carousel-thumb:hover {
+  transform: scale(1.08);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.carousel-thumb.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+  transform: scale(1.05);
+}
+
+.carousel-nav {
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-border);
+  color: var(--text-primary);
+  font-size: 20px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.carousel-nav:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.select-profile-btn {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px 24px;
+  border-radius: 20px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.select-profile-btn:hover {
+  background: var(--accent);
+  color: #07090e;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.select-profile-btn:active {
+  transform: scale(0.98);
+}
+
+
+.modal-close {
+  position: absolute;
+  top: -45px;
+  right: 0;
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-border);
+  color: var(--text-primary);
+  font-size: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.modal-close:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
 
 /* Prototype Caption */
 .caption {
@@ -124,13 +352,13 @@ body {
 
 /* 3D Canvas Container */
 .canvas-3d {
-  position: absolute;
-  inset: 0;
   width: 100%;
-  height: 100%;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.65;
+  height: 160px;
+  display: block;
+  z-index: 3;
+  pointer-events: auto;
+  opacity: 0.9;
+  margin-bottom: 8px;
 }
 
 /* Glassmorphic Gate Card */
@@ -354,6 +582,13 @@ body {
   flex-shrink: 0;
   overflow: hidden;
   border: 1px solid var(--accent);
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s;
+}
+
+.avatar:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .avatar img {

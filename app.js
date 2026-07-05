@@ -16,25 +16,25 @@ const canvas = document.getElementById('canvas3d');
 const ctx = canvas.getContext('2d');
 
 let width = canvas.width = canvas.offsetWidth || 342;
-let height = canvas.height = canvas.offsetHeight || 720;
+let height = canvas.height = canvas.offsetHeight || 160;
 
 const particles = [];
-const numParticles = 220;
-const sphereRadius = 90;
+const numParticles = 240;
+const sphereRadius = 60;
 
-let angleX = 0.003; // Initial rotation speed
-let angleY = 0.003;
-
+let autoRotation = 0;
 let mouseX = 0;
 let mouseY = 0;
 let targetX = 0;
 let targetY = 0;
+let currentTiltX = 0;
+let currentTiltY = 0;
 
 // Handle window resizing
 window.addEventListener('resize', () => {
   if (!canvas.offsetParent) return; // Skip if hidden
-  width = canvas.width = canvas.offsetWidth;
-  height = canvas.height = canvas.offsetHeight;
+  width = canvas.width = canvas.offsetWidth || 342;
+  height = canvas.height = canvas.offsetHeight || 160;
 });
 
 // Generate coordinates distributed evenly on a sphere using Fibonacci Spiral
@@ -44,14 +44,17 @@ for (let i = 0; i < numParticles; i++) {
   const theta = Math.sqrt(numParticles * Math.PI) * phi;
   
   particles.push({
-    x: sphereRadius * Math.cos(theta) * Math.sin(phi),
-    y: sphereRadius * Math.sin(theta) * Math.sin(phi),
-    z: sphereRadius * Math.cos(phi)
+    origX: sphereRadius * Math.cos(theta) * Math.sin(phi),
+    origY: sphereRadius * Math.sin(theta) * Math.sin(phi),
+    origZ: sphereRadius * Math.cos(phi),
+    x: 0,
+    y: 0,
+    z: 0
   });
 }
 
-// Track mouse position on the gate screen to tilt the sphere
-document.getElementById('gate-screen').addEventListener('mousemove', (e) => {
+// Track mouse position on the canvas to tilt the sphere
+canvas.addEventListener('mousemove', (e) => {
   const rect = canvas.getBoundingClientRect();
   mouseX = e.clientX - rect.left;
   mouseY = e.clientY - rect.top;
@@ -59,6 +62,12 @@ document.getElementById('gate-screen').addEventListener('mousemove', (e) => {
   // Calculate relative displacement from center (-1 to 1)
   targetX = (mouseX - width / 2) / (width / 2);
   targetY = (mouseY - height / 2) / (height / 2);
+});
+
+// Return to center when mouse leaves
+canvas.addEventListener('mouseleave', () => {
+  targetX = 0;
+  targetY = 0;
 });
 
 // Render Loop
@@ -71,46 +80,54 @@ function draw3D() {
 
   ctx.clearRect(0, 0, width, height);
 
-  // Smoothly interpolate (lerp) sphere rotation based on cursor displacement
-  const currentAngleX = 0.003 + targetY * 0.015;
-  const currentAngleY = 0.003 + targetX * 0.015;
+  // Increment auto rotation
+  autoRotation += 0.008;
 
-  // Rotate around axes
-  const cosX = Math.cos(currentAngleX);
-  const sinX = Math.sin(currentAngleX);
-  const cosY = Math.cos(currentAngleY);
-  const sinY = Math.sin(currentAngleY);
+  // Smoothly interpolate (lerp) tilt values
+  currentTiltX += (targetY * 0.45 - currentTiltX) * 0.08;
+  currentTiltY += (targetX * 0.45 - currentTiltY) * 0.08;
 
-  // Projection math
-  const focalLength = 250;
+  const cosAuto = Math.cos(autoRotation);
+  const sinAuto = Math.sin(autoRotation);
+  const cosTiltX = Math.cos(currentTiltX);
+  const sinTiltX = Math.sin(currentTiltX);
+  const cosTiltY = Math.cos(currentTiltY);
+  const sinTiltY = Math.sin(currentTiltY);
+
+  const focalLength = 200;
+
+  // Process and rotate points
+  particles.forEach(p => {
+    // 1. Auto rotation around Y axis
+    let rx = p.origX * cosAuto - p.origZ * sinAuto;
+    let ry = p.origY;
+    let rz = p.origZ * cosAuto + p.origX * sinAuto;
+
+    // 2. Apply tilt around X axis (driven by mouseY)
+    let rx2 = rx;
+    let ry2 = ry * cosTiltX - rz * sinTiltX;
+    let rz2 = rz * cosTiltX + ry * sinTiltX;
+
+    // 3. Apply tilt around Y axis (driven by mouseX)
+    p.x = rx2 * cosTiltY - rz2 * sinTiltY;
+    p.y = ry2;
+    p.z = rz2 * cosTiltY + rx2 * sinTiltY;
+  });
 
   // Sort particles by depth (Z) so that we draw back-to-front (Painters Algorithm)
   particles.sort((a, b) => b.z - a.z);
 
   particles.forEach(p => {
-    // Rotate Y
-    let x1 = p.x * cosY - p.z * sinY;
-    let z1 = p.z * cosY + p.x * sinY;
-
-    // Rotate X
-    let y2 = p.y * cosX - z1 * sinX;
-    let z2 = z1 * cosX + p.y * sinX;
-
-    // Save rotated values back to simulate constant rotation
-    p.x = x1;
-    p.y = y2;
-    p.z = z2;
-
     // Perspective projection
-    const scale = focalLength / (focalLength + z2);
-    const projX = x1 * scale + width / 2;
-    const projY = y2 * scale + height / 2;
+    const scale = focalLength / (focalLength + p.z);
+    const projX = p.x * scale + width / 2;
+    const projY = p.y * scale + height / 2;
 
     // Draw glowing point
     // Map Z-depth to opacity and size (closer = brighter/larger)
-    const normalizedZ = (z2 + sphereRadius) / (2 * sphereRadius); // 0 to 1
-    const size = 1.0 + normalizedZ * 2.2;
-    const opacity = 0.15 + normalizedZ * 0.7;
+    const normalizedZ = (p.z + sphereRadius) / (2 * sphereRadius); // 0 to 1
+    const size = 0.8 + normalizedZ * 1.8;
+    const opacity = 0.2 + normalizedZ * 0.65;
 
     ctx.fillStyle = `rgba(217, 164, 65, ${opacity})`;
     ctx.beginPath();
@@ -118,10 +135,10 @@ function draw3D() {
     ctx.fill();
     
     // Subtle glow backing for closer points
-    if (normalizedZ > 0.7) {
-      ctx.fillStyle = `rgba(217, 164, 65, 0.06)`;
+    if (normalizedZ > 0.75) {
+      ctx.fillStyle = `rgba(217, 164, 65, 0.05)`;
       ctx.beginPath();
-      ctx.arc(projX, projY, size * 2.5, 0, 2 * Math.PI);
+      ctx.arc(projX, projY, size * 2.2, 0, 2 * Math.PI);
       ctx.fill();
     }
   });
@@ -504,3 +521,197 @@ document.getElementById('btn-send').onclick = handleUserMessage;
 userInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') handleUserMessage();
 });
+
+// ==========================================================================
+// 4. HOURLY BACKGROUND UPDATER (YAGNI & Native-First)
+// ==========================================================================
+
+const BACKGROUND_IMAGES = [
+  'assets/1783233609307.png',
+  'assets/1783233685851.png',
+  'assets/1783233691554.png',
+  'assets/1783233696868.png',
+  'assets/1783233701839.png',
+  'assets/1783233707302.png',
+  'assets/1783233712441.png',
+  'assets/1783233717814.png',
+  'assets/1783233722279.png',
+  'assets/1783233726879.png'
+];
+
+function updateHourlyBackground() {
+  const ambientBg = document.getElementById('ambient-bg');
+  if (!ambientBg) return;
+
+  const currentHour = new Date().getHours();
+  const imageIndex = currentHour % BACKGROUND_IMAGES.length;
+  const selectedImage = BACKGROUND_IMAGES[imageIndex];
+
+  // Preload the image to prevent background flickering during transition
+  // ponytail: standard image preloading before changing source, avoiding flash elements
+  const img = new Image();
+  img.onload = () => {
+    ambientBg.style.backgroundImage = `url('${selectedImage}')`;
+  };
+  img.src = selectedImage;
+}
+
+// Initial triggers
+updateHourlyBackground();
+
+// ==========================================================================
+// 5. HOURLY PROFILE PICTURE UPDATER & POPUP MODAL (YAGNI & Native-First)
+// ==========================================================================
+
+const PROFILE_IMAGES = [
+  'assets/profile/IMG-20260705-WA0015(1).jpg.jpeg',
+  'assets/profile/IMG-20260705-WA0016.jpg.jpeg',
+  'assets/profile/IMG-20260705-WA0017.jpg.jpeg',
+  'assets/profile/IMG-20260705-WA0018.jpg.jpeg',
+  'assets/profile/IMG-20260705-WA0019.jpg.jpeg',
+  'assets/profile/IMG-20260705-WA0021.jpg.jpeg',
+  'assets/profile/IMG-20260705-WA0023.jpg.jpeg',
+  'assets/profile/IMG-20260705-WA0024.jpg.jpeg',
+  'assets/profile/IMG-20260705-WA0025.jpg.jpeg',
+  'assets/profile/IMG-20260705-WA0026.jpg.jpeg',
+  'assets/profile/IMG-20260705-WA0027.jpg.jpeg',
+  'assets/profile/IMG-20260705-WA0029.jpg.jpeg'
+];
+
+let currentProfileIndex = 0;
+let isProfileManuallySet = false;
+
+function updateProfileImage() {
+  const avatarImg = document.getElementById('avatar-image');
+  const container = document.getElementById('avatar-container');
+
+  if (avatarImg) {
+    // Restore image element to container if error fallback cleared it previously
+    if (container && !container.contains(avatarImg)) {
+      container.textContent = '';
+      container.appendChild(avatarImg);
+    }
+    avatarImg.style.display = 'block';
+    avatarImg.src = PROFILE_IMAGES[currentProfileIndex];
+  }
+}
+
+function updateHourlyProfile() {
+  if (isProfileManuallySet) return;
+  const currentHour = new Date().getHours();
+  currentProfileIndex = currentHour % PROFILE_IMAGES.length;
+  updateProfileImage();
+}
+
+// Bind avatar click to open the full-screen modal popup
+const avatarContainer = document.getElementById('avatar-container');
+const profileModal = document.getElementById('profile-modal');
+const profileCarousel = document.getElementById('profile-carousel');
+const modalPreviewImage = document.getElementById('modal-preview-image');
+const carouselPrev = document.getElementById('carousel-prev');
+const carouselNext = document.getElementById('carousel-next');
+const btnSelectProfile = document.getElementById('btn-select-profile');
+
+let tempProfileIndex = 0;
+
+function initProfileCarousel() {
+  if (!profileCarousel) return;
+  profileCarousel.innerHTML = '';
+  PROFILE_IMAGES.forEach((src, idx) => {
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = `Option ${idx + 1}`;
+    img.className = 'carousel-thumb';
+    img.onclick = () => {
+      previewProfileImage(idx);
+    };
+    profileCarousel.appendChild(img);
+  });
+}
+
+function previewProfileImage(idx) {
+  tempProfileIndex = idx;
+  if (modalPreviewImage) {
+    modalPreviewImage.style.opacity = '0.3';
+    setTimeout(() => {
+      modalPreviewImage.src = PROFILE_IMAGES[tempProfileIndex];
+      modalPreviewImage.style.opacity = '1';
+    }, 150);
+  }
+
+  // Update active thumbnail classes and center scroll
+  if (profileCarousel) {
+    const thumbs = profileCarousel.querySelectorAll('.carousel-thumb');
+    thumbs.forEach((thumb, tIdx) => {
+      if (tIdx === idx) {
+        thumb.classList.add('active');
+        thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      } else {
+        thumb.classList.remove('active');
+      }
+    });
+  }
+}
+
+if (carouselPrev) {
+  carouselPrev.onclick = () => {
+    const newIdx = (tempProfileIndex - 1 + PROFILE_IMAGES.length) % PROFILE_IMAGES.length;
+    previewProfileImage(newIdx);
+  };
+}
+
+if (carouselNext) {
+  carouselNext.onclick = () => {
+    const newIdx = (tempProfileIndex + 1) % PROFILE_IMAGES.length;
+    previewProfileImage(newIdx);
+  };
+}
+
+if (btnSelectProfile) {
+  btnSelectProfile.onclick = () => {
+    currentProfileIndex = tempProfileIndex;
+    isProfileManuallySet = true;
+    updateProfileImage();
+    closeModal();
+  };
+}
+
+if (avatarContainer && profileModal) {
+  avatarContainer.onclick = () => {
+    tempProfileIndex = currentProfileIndex;
+    if (modalPreviewImage) {
+      modalPreviewImage.src = PROFILE_IMAGES[tempProfileIndex];
+    }
+    profileModal.classList.add('show');
+    profileModal.setAttribute('aria-hidden', 'false');
+    
+    // Scroll active item into view once layout has settled
+    setTimeout(() => {
+      previewProfileImage(tempProfileIndex);
+    }, 120);
+  };
+}
+
+// Bind modal close actions
+const closeModal = () => {
+  if (profileModal) {
+    profileModal.classList.remove('show');
+    profileModal.setAttribute('aria-hidden', 'true');
+  }
+};
+
+const closeBtn = document.getElementById('modal-close');
+const overlay = document.getElementById('modal-overlay');
+
+if (closeBtn) closeBtn.onclick = closeModal;
+if (overlay) overlay.onclick = closeModal;
+
+// Initial trigger
+updateHourlyProfile();
+initProfileCarousel();
+
+// Periodically check if background and profile images need updating (every 60 seconds)
+setInterval(() => {
+  updateHourlyBackground();
+  updateHourlyProfile();
+}, 60000);
